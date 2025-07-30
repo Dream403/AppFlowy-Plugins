@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:appflowy_editor_plugins/appflowy_editor_plugins.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:universal_platform/universal_platform.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,9 +31,7 @@ class _AppWidgetState extends State<AppWidget> {
       theme: theme,
       home: Editor(
         toggleBrightness: () => setState(
-          () => theme = theme.brightness == Brightness.light
-              ? ThemeData.dark()
-              : ThemeData.light(),
+          () => theme = theme.brightness == Brightness.light ? ThemeData.dark() : ThemeData.light(),
         ),
       ),
     );
@@ -90,9 +88,8 @@ class _EditorState extends State<Editor> {
           backgroundColor: Theme.of(context).brightness == Brightness.light
               ? Colors.grey[200]!
               : Colors.grey[800]!,
-          foregroundColor: Theme.of(context).brightness == Brightness.light
-              ? Colors.blue
-              : Colors.blue[800]!,
+          foregroundColor:
+              Theme.of(context).brightness == Brightness.light ? Colors.blue : Colors.blue[800]!,
         ),
         actions: CodeBlockActions(
           onCopy: (code) => Clipboard.setData(ClipboardData(text: code)),
@@ -107,8 +104,8 @@ class _EditorState extends State<Editor> {
             height: 32.0,
             child: InkWell(
               borderRadius: BorderRadius.circular(4.0),
-              onTap: () => Clipboard.setData(ClipboardData(
-                  text: node.attributes[LinkPreviewBlockKeys.url])),
+              onTap: () =>
+                  Clipboard.setData(ClipboardData(text: node.attributes[LinkPreviewBlockKeys.url])),
               child: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8),
                 child: Icon(Icons.copy, size: 18.0),
@@ -137,16 +134,14 @@ class _EditorState extends State<Editor> {
           IconButton(
             onPressed: widget.toggleBrightness,
             icon: Icon(
-              Theme.of(context).brightness == Brightness.light
-                  ? Icons.dark_mode
-                  : Icons.light_mode,
+              Theme.of(context).brightness == Brightness.light ? Icons.dark_mode : Icons.light_mode,
             ),
           ),
         ],
       ),
       body: AppFlowyEditor(
         editorState: editorState,
-        editorStyle: PlatformExtension.isMobile
+        editorStyle: (UniversalPlatform.isAndroid || UniversalPlatform.isIOS)
             ? const EditorStyle.mobile()
             : const EditorStyle.desktop(),
         characterShortcutEvents: shortcutEvents,
