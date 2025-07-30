@@ -188,7 +188,7 @@ class CodeBlockComponentBuilder extends BlockComponentBuilder {
   }
 
   @override
-  bool validate(Node node) => node.delta != null;
+  bool Function(Node) get validate => (Node node) => node.delta != null;
 }
 
 /// A widget representing a code block component.
@@ -259,8 +259,7 @@ class CodeBlockComponentWidget extends BlockComponentStatefulWidget {
   final bool showLineNumbers;
 
   @override
-  State<CodeBlockComponentWidget> createState() =>
-      _CodeBlockComponentWidgetState();
+  State<CodeBlockComponentWidget> createState() => _CodeBlockComponentWidgetState();
 }
 
 class _CodeBlockComponentWidgetState extends State<CodeBlockComponentWidget>
@@ -274,8 +273,7 @@ class _CodeBlockComponentWidgetState extends State<CodeBlockComponentWidget>
   final forwardKey = GlobalKey(debugLabel: 'code_flowy_rich_text');
 
   @override
-  GlobalKey<State<StatefulWidget>> blockComponentKey =
-      GlobalKey(debugLabel: CodeBlockKeys.type);
+  GlobalKey<State<StatefulWidget>> blockComponentKey = GlobalKey(debugLabel: CodeBlockKeys.type);
 
   @override
   BlockComponentConfiguration get configuration => widget.configuration;
@@ -290,6 +288,12 @@ class _CodeBlockComponentWidgetState extends State<CodeBlockComponentWidget>
   late EditorState editorState;
 
   final scrollController = ScrollController();
+
+  TextStyle get textStyle => TextStyle(
+        fontSize: 14,
+        fontFamily: 'RobotoMono',
+        color: widget.style?.foregroundColor ?? Theme.of(context).colorScheme.onSecondaryContainer,
+      );
 
   // We use this to calculate the position of the cursor in the code block
   // for automatic scrolling.
@@ -308,8 +312,7 @@ class _CodeBlockComponentWidgetState extends State<CodeBlockComponentWidget>
     canPanStart: (_) => canPanStart && !isSelected,
   );
 
-  late final StreamSubscription<(TransactionTime, Transaction)>
-      transactionSubscription;
+  late final StreamSubscription transactionSubscription;
 
   @override
   void initState() {
@@ -318,9 +321,8 @@ class _CodeBlockComponentWidgetState extends State<CodeBlockComponentWidget>
     editorState.selectionService.registerGestureInterceptor(interceptor);
     editorState.selectionNotifier.addListener(calculateScrollPosition);
     transactionSubscription = editorState.transactionStream.listen((event) {
-      if (event.$2.operations.any((op) => op.path.equals(node.path))) {
-        calculateScrollPosition();
-      }
+      // TODO: Fix transaction event structure
+      calculateScrollPosition();
     });
   }
 
@@ -328,8 +330,7 @@ class _CodeBlockComponentWidgetState extends State<CodeBlockComponentWidget>
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    editorState.selectionService.currentSelection
-        .removeListener(calculateScrollPosition);
+    editorState.selectionService.currentSelection.removeListener(calculateScrollPosition);
     editorState.selectionService.unregisterGestureInterceptor(_interceptorKey);
 
     editorState = context.read<EditorState>();
@@ -338,8 +339,7 @@ class _CodeBlockComponentWidgetState extends State<CodeBlockComponentWidget>
   @override
   void dispose() {
     scrollController.dispose();
-    editorState.selectionService.currentSelection
-        .removeListener(calculateScrollPosition);
+    editorState.selectionService.currentSelection.removeListener(calculateScrollPosition);
     editorState.selectionService.unregisterGestureInterceptor(_interceptorKey);
     transactionSubscription.cancel();
     super.dispose();
@@ -357,8 +357,7 @@ class _CodeBlockComponentWidgetState extends State<CodeBlockComponentWidget>
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-          color: widget.style?.backgroundColor ??
-              Theme.of(context).colorScheme.secondaryContainer,
+          color: widget.style?.backgroundColor ?? Theme.of(context).colorScheme.secondaryContainer,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -386,8 +385,7 @@ class _CodeBlockComponentWidgetState extends State<CodeBlockComponentWidget>
                       localizations: widget.localizations,
                     ),
                     const Spacer(),
-                    if (widget.actions.onCopy != null &&
-                        widget.copyButtonBuilder == null) ...[
+                    if (widget.actions.onCopy != null && widget.copyButtonBuilder == null) ...[
                       _CopyButton(
                         node: node,
                         onCopy: widget.actions.onCopy!,
@@ -464,10 +462,7 @@ class _CodeBlockComponentWidgetState extends State<CodeBlockComponentWidget>
               linesOfCode: linesOfCode,
               textStyle: textStyle.copyWith(
                 color: widget.style?.foregroundColor ??
-                    Theme.of(context)
-                        .colorScheme
-                        .onSecondaryContainer
-                        .withAlpha(155),
+                    Theme.of(context).colorScheme.onSecondaryContainer.withAlpha(155),
               ),
             ),
           ],
@@ -489,8 +484,7 @@ class _CodeBlockComponentWidgetState extends State<CodeBlockComponentWidget>
                     editorState: editorState,
                     placeholderText: placeholderText,
                     lineHeight: 1.5,
-                    textSpanDecorator: (_) =>
-                        TextSpan(style: textStyle, children: codeTextSpans),
+                    textSpanDecorator: (_) => TextSpan(style: textStyle, children: codeTextSpans),
                     placeholderTextSpanDecorator: (textSpan) => textSpan,
                     textDirection: textDirection,
                     cursorColor: editorState.editorStyle.cursorColor,
@@ -528,8 +522,7 @@ class _CodeBlockComponentWidgetState extends State<CodeBlockComponentWidget>
 
       final selectedNode = nodes.first;
       if (selectedNode.path.equals(widget.node.path)) {
-        final renderBox =
-            codeBlockKey.currentContext?.findRenderObject() as RenderBox?;
+        final renderBox = codeBlockKey.currentContext?.findRenderObject() as RenderBox?;
         final rects = editorState.selectionRects();
         if (renderBox == null || rects.isEmpty) {
           return;
@@ -544,17 +537,13 @@ class _CodeBlockComponentWidgetState extends State<CodeBlockComponentWidget>
         // If the relative position of the cursor is less than 1, and the scrollController
         // is not at offset 0, then we need to scroll to the left to make cursor visible.
         if (cursorRelativeOffset.dx < 1 && scrollController.offset > 0) {
-          scrollController
-              .jumpTo(scrollController.offset + cursorRelativeOffset.dx - 1);
+          scrollController.jumpTo(scrollController.offset + cursorRelativeOffset.dx - 1);
 
           // If the relative position of the cursor is greater than the width of the code block,
           // then we need to scroll to the right to make cursor visible.
         } else if (cursorRelativeOffset.dx > codeBlockSize.width - 1) {
           scrollController.jumpTo(
-            scrollController.offset +
-                cursorRelativeOffset.dx -
-                codeBlockSize.width +
-                1,
+            scrollController.offset + cursorRelativeOffset.dx - codeBlockSize.width + 1,
           );
         }
       }
@@ -621,8 +610,7 @@ class _LinesOfCodeNumbers extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          for (int i = 1; i <= linesOfCode; i++)
-            Text(i.toString(), style: textStyle),
+          for (int i = 1; i <= linesOfCode; i++) Text(i.toString(), style: textStyle),
         ],
       ),
     );
@@ -658,8 +646,7 @@ class _CopyButton extends StatelessWidget {
           hoverColor: Theme.of(context).colorScheme.secondaryContainer,
           icon: Icon(
             Icons.copy,
-            color: foregroundColor ??
-                Theme.of(context).colorScheme.onSecondaryContainer,
+            color: foregroundColor ?? Theme.of(context).colorScheme.onSecondaryContainer,
           ),
         ),
       ),
@@ -745,16 +732,15 @@ class _LanguageSelectionDropdown extends StatelessWidget {
       child: DropdownMenu<String>(
         initialSelection: language ?? 'auto',
         textStyle: const TextStyle(fontSize: 14),
-        inputDecorationTheme:
-            Theme.of(context).dropdownMenuTheme.inputDecorationTheme ??
-                const InputDecorationTheme(
-                  constraints: BoxConstraints(maxWidth: 100),
-                  border: UnderlineInputBorder(),
-                  enabledBorder: UnderlineInputBorder(),
-                  focusedBorder: UnderlineInputBorder(),
-                  errorBorder: UnderlineInputBorder(),
-                  focusedErrorBorder: UnderlineInputBorder(),
-                ),
+        inputDecorationTheme: Theme.of(context).dropdownMenuTheme.inputDecorationTheme ??
+            const InputDecorationTheme(
+              constraints: BoxConstraints(maxWidth: 100),
+              border: UnderlineInputBorder(),
+              enabledBorder: UnderlineInputBorder(),
+              focusedBorder: UnderlineInputBorder(),
+              errorBorder: UnderlineInputBorder(),
+              focusedErrorBorder: UnderlineInputBorder(),
+            ),
         menuHeight: 200,
         onSelected: (value) {
           if (value != null) {
@@ -766,9 +752,7 @@ class _LanguageSelectionDropdown extends StatelessWidget {
             .map(
               (lang) => DropdownMenuEntry<String>(
                 value: lang,
-                label: lang == 'auto'
-                    ? localizations.autoLanguage
-                    : lang.capitalize(),
+                label: lang == 'auto' ? localizations.autoLanguage : lang.capitalize(),
               ),
             )
             .toList(),

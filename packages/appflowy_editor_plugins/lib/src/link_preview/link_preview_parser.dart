@@ -2,7 +2,8 @@ import 'package:flutter/rendering.dart';
 
 import 'package:appflowy_editor_plugins/appflowy_editor_plugins.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart';
-import 'package:flutter_link_previewer/flutter_link_previewer.dart';
+import 'package:http/http.dart' as http;
+import 'package:html/parser.dart' as parser;
 
 enum LinkPreviewRegex { title, description, image }
 
@@ -13,8 +14,7 @@ class LinkPreviewData {
         imageUrl: data.image?.url,
       );
 
-  factory LinkPreviewData.fromJson(Map<String, dynamic> json) =>
-      LinkPreviewData(
+  factory LinkPreviewData.fromJson(Map<String, dynamic> json) => LinkPreviewData(
         title: json['title'],
         description: json['description'],
         imageUrl: json['imageUrl'],
@@ -45,16 +45,48 @@ class LinkPreviewParser {
       metadata = await cache?.get(url);
       if (metadata != null) {
         // Refresh the cache on background
-        return getPreviewData(url).then(
-          (data) => cache?.set(url, LinkPreviewData.fromPreviewData(data)),
+        return _fetchPreviewData(url).then(
+          (data) => cache?.set(url, data),
         );
       }
-      metadata = LinkPreviewData.fromPreviewData(await getPreviewData(url));
+      metadata = await _fetchPreviewData(url);
       cache?.set(url, metadata!);
     } catch (e, s) {
       debugPrint('$e\n$s');
       metadata = null;
     }
+  }
+
+  /// Fetch preview data for a given URL
+  Future<LinkPreviewData> _fetchPreviewData(String url) async {
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final document = parser.parse(response.body);
+
+        // Extract title
+        final title = document.querySelector('meta[property="og:title"]')?.attributes['content'] ??
+            document.querySelector('title')?.text;
+
+        // Extract description
+        final description =
+            document.querySelector('meta[property="og:description"]')?.attributes['content'] ??
+                document.querySelector('meta[name="description"]')?.attributes['content'];
+
+        // Extract image
+        final imageUrl = document.querySelector('meta[property="og:image"]')?.attributes['content'];
+
+        return LinkPreviewData(
+          title: title,
+          description: description,
+          imageUrl: imageUrl,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error fetching preview data: $e');
+    }
+
+    return const LinkPreviewData();
   }
 
   String? getContent(LinkPreviewRegex regex) {

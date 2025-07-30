@@ -131,7 +131,7 @@ class VideoBlockComponentBuilder extends BlockComponentBuilder {
   }
 
   @override
-  bool validate(Node node) => node.delta == null && node.children.isEmpty;
+  bool Function(Node) get validate => (Node node) => node.delta == null && node.children.isEmpty;
 }
 
 class VideoBlockComponent extends BlockComponentStatefulWidget {
@@ -228,8 +228,7 @@ class VideoBlockComponentState extends State<VideoBlockComponent>
       return;
     }
 
-    if (player.state.playlist.medias.isEmpty ||
-        player.state.playlist.medias.first.uri != src) {
+    if (player.state.playlist.medias.isEmpty || player.state.playlist.medias.first.uri != src) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         player.open(Media(src), play: false);
       });
@@ -251,18 +250,15 @@ class VideoBlockComponentState extends State<VideoBlockComponent>
       attributes[VideoBlockKeys.alignment] ?? 'center',
     );
 
-    final width = attributes[VideoBlockKeys.width]?.toDouble() ??
-        MediaQuery.of(context).size.width;
+    final width = attributes[VideoBlockKeys.width]?.toDouble() ?? MediaQuery.of(context).size.width;
 
     Widget child;
     if (src == null || src.isEmpty) {
-      child =
-          widget.placeholderBuilder?.call(node) ?? const Text('Placeholder');
+      child = widget.placeholderBuilder?.call(node) ?? const Text('Placeholder');
     } else if (!_checkIfURLIsValid(src)) {
       // If you don't have validation for the source, the default validation might fail.
       // You can use the [VideoBlockComponent.errorBuilder] to replace this.
-      child =
-          widget.errorBuilder?.call(node) ?? const Text('Unsupported source');
+      child = widget.errorBuilder?.call(node) ?? const Text('Unsupported source');
     } else {
       child = ResizableVidePlayer(
         src: src,
@@ -369,8 +365,7 @@ class VideoBlockComponentState extends State<VideoBlockComponent>
     final videoBox = videoKey.currentContext?.findRenderObject();
     if (parentBox is RenderBox && videoBox is RenderBox) {
       return [
-        videoBox.localToGlobal(Offset.zero, ancestor: parentBox) &
-            videoBox.size,
+        videoBox.localToGlobal(Offset.zero, ancestor: parentBox) & videoBox.size,
       ];
     }
     return [Offset.zero & _renderBox!.size];

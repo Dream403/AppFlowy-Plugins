@@ -83,8 +83,8 @@ class LinkPreviewBlockComponentBuilder extends BlockComponentBuilder {
   }
 
   @override
-  bool validate(Node node) =>
-      node.attributes[LinkPreviewBlockKeys.url]!.isNotEmpty;
+  bool Function(Node) get validate =>
+      (Node node) => node.attributes[LinkPreviewBlockKeys.url]!.isNotEmpty;
 }
 
 class LinkPreviewBlockComponent extends BlockComponentStatefulWidget {
@@ -110,8 +110,7 @@ class LinkPreviewBlockComponent extends BlockComponentStatefulWidget {
   final LinkPreviewDataCacheInterface? cache;
 
   @override
-  State<LinkPreviewBlockComponent> createState() =>
-      LinkPreviewBlockComponentState();
+  State<LinkPreviewBlockComponent> createState() => LinkPreviewBlockComponentState();
 }
 
 class LinkPreviewBlockComponentState extends State<LinkPreviewBlockComponent>
@@ -312,8 +311,7 @@ class _LinkPreviewWidget extends StatelessWidget {
                     Text(
                       url.toString(),
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: Colors.grey),
+                      style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
                     ),
                   ],
                 ),
