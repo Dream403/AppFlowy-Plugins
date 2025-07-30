@@ -22,7 +22,10 @@ environment:
   flutter: ">=3.22.0"
 
 dependencies:
-  appflowy_editor: ^3.3.0
+  appflowy_editor:
+  git:
+    url: https://github.com/AppFlowy-IO/appflowy-editor.git
+    ref: main
   flutter:
     sdk: flutter
   flutter_chat_types: ^3.6.2
